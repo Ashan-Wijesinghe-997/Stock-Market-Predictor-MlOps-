@@ -128,7 +128,7 @@ pipeline {
                             ${DOCKERHUB_NAMESPACE}/${BACKEND_IMAGE_NAME}:latest
 
                         sudo docker run -d --name ${FRONTEND_CONTAINER_NAME} --network ${dockernetwork} -p 5173:5173 \\
-                            -e REACT_APP_BACKEND_URL=http://${publicIP}:8000 \\
+                            -e VITE_BACKEND_URL=http://${publicIP}:8000 \\
                             ${DOCKERHUB_NAMESPACE}/${FRONTEND_IMAGE_NAME}:latest
 
                         echo "Cleaning up old images...";
