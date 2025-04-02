@@ -85,7 +85,23 @@ pipeline {
         //         }
         //     }
         // }
-
+            stage('Pull Latest Docker Images on AWS') {
+                steps {
+                    script {
+                        def pemFilePath = "/var/lib/jenkins/.ssh/projserverpem.pem"
+                        def publicIP = "44.204.36.222"
+                        
+                        sh """
+                        ssh -o StrictHostKeyChecking=no -i "${pemFilePath}" ubuntu@${publicIP} '
+                            echo "Pulling latest Docker images...";
+                            sudo docker pull ${DOCKERHUB_NAMESPACE}/${BACKEND_IMAGE_NAME}:latest
+                            sudo docker pull ${DOCKERHUB_NAMESPACE}/${FRONTEND_IMAGE_NAME}:latest
+                            echo "Docker images updated successfully!"
+                        '
+                        """
+                    }
+                }
+            }
 
             stage('Deploy to AWS') {
             steps {
