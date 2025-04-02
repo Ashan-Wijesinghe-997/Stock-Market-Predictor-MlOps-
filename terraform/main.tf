@@ -11,16 +11,13 @@ data "aws_instance" "existing_instance" {
 data "aws_vpc" "existing_vpc" {
   filter {
     name   = "vpc-id"
-    values = [data.aws_instance.existing_instance.vpc_id]
+    values = [data.aws_instance.existing_instance.vpc_security_group_ids[0]]  # Changed from vpc_id to vpc_security_group_ids
   }
 }
 
 # Get subnet info using the instance ID
 data "aws_subnet" "existing_subnet" {
-  filter {
-    name   = "subnet-id"
-    values = [data.aws_instance.existing_instance.subnet_id]
-  }
+  id = data.aws_instance.existing_instance.subnet_id  # Changed to direct subnet_id reference
 }
 
 # Security group for the application
