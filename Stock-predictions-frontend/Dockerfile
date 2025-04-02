@@ -14,4 +14,4 @@ COPY . .
 # Build the app
 RUN npm run build
 
-CMD ["npm", "run", "preview"]
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "4173"]
