@@ -1,0 +1,49 @@
+---
+- name: Deploy Stock Predictor Application
+  hosts: all
+  become: yes
+  vars:
+    docker_compose_version: "1.29.2"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install required packages
+      apt:
+        name:
+          - docker.io
+          - python3-pip
+        state: present
+
+    - name: Install Docker Compose
+      get_url:
+        url: "https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-Linux-x86_64"
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+
+    - name: Create app directory
+      file:
+        path: /opt/stock-predictor
+        state: directory
+
+    - name: Copy docker-compose file
+      copy:
+        src: ../docker-compose.yml
+        dest: /opt/stock-predictor/docker-compose.yml
+
+    - name: Copy backend files
+      copy:
+        src: ../Stock-predictions-backend/
+        dest: /opt/stock-predictor/Stock-predictions-backend/
+
+    - name: Copy frontend files
+      copy:
+        src: ../Stock-predictions-frontend/
+        dest: /opt/stock-predictor/Stock-predictions-frontend/
+
+    - name: Start application with Docker Compose
+      docker_compose:
+        project_src: /opt/stock-predictor
+        state: present
