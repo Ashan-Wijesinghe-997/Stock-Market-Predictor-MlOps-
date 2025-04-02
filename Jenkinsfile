@@ -6,6 +6,10 @@ pipeline {
         FRONTEND_IMAGE = 'ashanwijesinghe/stock-predictions-frontend'
         DOCKER_CREDENTIALS_ID = 'docker-hub-credentials'
         AWS_CREDENTIALS_ID = 'aws-credentials'
+        AWS_REGION = 'us-east-1'
+        ECS_CLUSTER = 'stock-predictions-cluster'
+        ECS_SERVICE = 'stock-predictions-service'
+        ECS_TASK_DEFINITION = 'stock-predictions-task'
     }
 
     stages {
@@ -43,70 +47,34 @@ pipeline {
             }
         }
 
-        stage('Terraform Init and Plan') {
+        stage('Deploy to AWS ECS') {
             steps {
                 script {
                     withCredentials([
-                        [
-                            $class: 'AmazonWebServicesCredentialsBinding',
-                            credentialsId: AWS_CREDENTIALS_ID,
-                            accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                        ]
+                        [$class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: AWS_CREDENTIALS_ID,
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']
                     ]) {
-                        dir('terraform') {
-                            sh 'terraform init'
-                            sh 'terraform plan -out=tfplan'
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Terraform Apply') {
-            steps {
-                script {
-                    withCredentials([
-                        [
-                            $class: 'AmazonWebServicesCredentialsBinding',
-                            credentialsId: AWS_CREDENTIALS_ID,
-                            accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                        ]
-                    ]) {
-                        dir('terraform') {
-                            sh 'terraform apply -auto-approve tfplan'
-                            sh '''
-                                echo "[app_servers]" > ../ansible/inventory.ini
-                                echo "$(terraform output -raw public_ip) ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/.ssh/ec2-key.pem" >> ../ansible/inventory.ini
-                            '''
-                        }
-                    }
-                }
-            }
-        }  
-
-        stage('Deploy with Ansible') {
-            steps {
-                script {
-                    withCredentials([file(credentialsId: 'ec2-ssh-key-file', variable: 'SSH_KEY_FILE')]) {
-                        dir('ansible') {
-                            // Copy SSH key to a location Ansible can use
-                            sh '''
-                                mkdir -p /var/lib/jenkins/.ssh
-                                cp "$SSH_KEY_FILE" /var/lib/jenkins/.ssh/ec2-key.pem
-                                chmod 400 /var/lib/jenkins/.ssh/ec2-key.pem
-                            '''
+                        sh '''
+                            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+                            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+                            aws configure set region $AWS_REGION
                             
-                            // Wait for SSH to be available
-                            sh 'sleep 60'
+                            echo "Registering new ECS task definition..."
+                            aws ecs register-task-definition \
+                                --family $ECS_TASK_DEFINITION \
+                                --container-definitions '[
+                                    {"name":"backend","image":"'$BACKEND_IMAGE'","memory":512,"cpu":256,"essential":true},
+                                    {"name":"frontend","image":"'$FRONTEND_IMAGE'","memory":512,"cpu":256,"essential":true}
+                                ]'
                             
-                            // Run Ansible playbook
-                            sh '''
-                                export ANSIBLE_HOST_KEY_CHECKING=False
-                                ansible-playbook -i inventory.ini playbook.yml
-                            '''
-                        }
+                            echo "Updating ECS service..."
+                            aws ecs update-service \
+                                --cluster $ECS_CLUSTER \
+                                --service $ECS_SERVICE \
+                                --force-new-deployment
+                        '''
                     }
                 }
             }
@@ -116,14 +84,6 @@ pipeline {
     post {
         always {
             echo 'Pipeline execution completed.'
-            
-            // Clean up SSH key
-            sh 'rm -f /var/lib/jenkins/.ssh/ec2-key.pem'
-            
-            // Clean up Terraform files
-            dir('terraform') {
-                deleteDir()
-            }
         }
     }
 }
