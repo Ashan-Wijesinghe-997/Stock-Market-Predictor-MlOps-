@@ -90,7 +90,7 @@ pipeline {
             stage('Deploy to AWS') {
             steps {
                 script {
-                    def pemFilePath = "/home/ashan/projserverpem.pem"
+                    def pemFilePath = "/var/lib/jenkins/.ssh/projserverpem.pem"
                     def publicIP = "44.204.36.222"
                     def dockernetwork = "mynet"
 
