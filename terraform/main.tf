@@ -7,14 +7,20 @@ data "aws_instance" "existing_instance" {
   instance_id = "i-000268ebf429d0436"
 }
 
-# Data source for the existing VPC
+# Get VPC info using the instance ID
 data "aws_vpc" "existing_vpc" {
-  id = data.aws_instance.existing_instance.vpc_id
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_instance.existing_instance.vpc_id]
+  }
 }
 
-# Data source for the existing subnet
+# Get subnet info using the instance ID
 data "aws_subnet" "existing_subnet" {
-  id = data.aws_instance.existing_instance.subnet_id
+  filter {
+    name   = "subnet-id"
+    values = [data.aws_instance.existing_instance.subnet_id]
+  }
 }
 
 # Security group for the application
@@ -55,7 +61,7 @@ resource "aws_security_group" "app_sg" {
 # Update the network interface with the new security group
 resource "aws_network_interface_sg_attachment" "sg_attachment" {
   security_group_id    = aws_security_group.app_sg.id
-  network_interface_id = data.aws_instance.existing_instance.network_interface_id
+  network_interface_id = data.aws_instance.existing_instance.primary_network_interface_id
 }
 
 # Outputs
