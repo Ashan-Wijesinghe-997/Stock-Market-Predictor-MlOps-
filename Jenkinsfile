@@ -31,10 +31,11 @@ pipeline {
         stage('Push Docker Images') {
             steps {
                 script {
-                    docker.withRegistry('', DOCKER_CREDENTIALS_ID) {
-                        sh 'docker push $BACKEND_IMAGE'
-                        sh 'docker push $FRONTEND_IMAGE'
-                    }
+                    sh '''
+                        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                        docker push $BACKEND_IMAGE
+                        docker push $FRONTEND_IMAGE
+                    '''
                 }
             }
         }
