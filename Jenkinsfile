@@ -46,10 +46,7 @@ pipeline {
         stage('Terraform Init and Plan') {
             steps {
                 script {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
-                                    credentialsId: AWS_CREDENTIALS_ID,
-                                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                    withAWS(credentials: AWS_CREDENTIALS_ID, region: 'us-east-1') {
                         dir('terraform') {
                             sh 'terraform init'
                             sh 'terraform plan -out=tfplan'
@@ -62,13 +59,9 @@ pipeline {
         stage('Terraform Apply') {
             steps {
                 script {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', 
-                                    credentialsId: AWS_CREDENTIALS_ID,
-                                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                    withAWS(credentials: AWS_CREDENTIALS_ID, region: 'us-east-1') {
                         dir('terraform') {
                             sh 'terraform apply -auto-approve tfplan'
-                            // Capture the EC2 public IP
                             sh '''
                                 echo "[app_servers]" > ../ansible/inventory.ini
                                 echo "$(terraform output -raw public_ip) ansible_user=ubuntu ansible_ssh_private_key_file=/var/lib/jenkins/.ssh/ec2-key.pem" >> ../ansible/inventory.ini
@@ -77,7 +70,7 @@ pipeline {
                     }
                 }
             }
-        }
+        }   
 
         stage('Deploy with Ansible') {
             steps {
