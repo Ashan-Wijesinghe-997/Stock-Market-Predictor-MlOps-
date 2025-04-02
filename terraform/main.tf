@@ -2,48 +2,33 @@ provider "aws" {
   region = "us-east-1"
 }
 
+# Data source for the existing EC2 instance
 data "aws_instance" "existing_instance" {
-  filter {
-    name   = "tag:Name"
-    values = ["i-000268ebf429d0436"]  # Replace with your EC2 instance name
-  }
+  instance_id = "i-000268ebf429d0436"  # Your EC2 instance ID
 }
 
-output "public_ip" {
-  value = data.aws_instance.existing_instance.public_ip
+# Data source for the existing VPC
+data "aws_vpc" "existing_vpc" {
+  id = data.aws_instance.existing_instance.vpc_id
 }
 
-resource "aws_vpc" "main" {
-  cidr_block           = "10.0.0.0/16"
-  enable_dns_hostnames = true
-  enable_dns_support   = true
-
-  tags = {
-    Name = "stock-predictor-vpc"
-  }
+# Data source for the existing subnet
+data "aws_subnet" "existing_subnet" {
+  id = data.aws_instance.existing_instance.subnet_id
 }
 
-resource "aws_subnet" "public" {
-  vpc_id                  = aws_vpc.main.id
-  cidr_block             = "10.0.1.0/24"
-  availability_zone       = "us-east-1a"
-  map_public_ip_on_launch = true
-
-  tags = {
-    Name = "stock-predictor-public-subnet"
-  }
-}
-
+# Security group for the application
 resource "aws_security_group" "app_sg" {
   name        = "stock-predictor-sg"
   description = "Security group for stock predictor application"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = data.aws_vpc.existing_vpc.id
 
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "SSH access"
   }
 
   ingress {
@@ -51,6 +36,7 @@ resource "aws_security_group" "app_sg" {
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "HTTP access"
   }
 
   ingress {
@@ -58,6 +44,15 @@ resource "aws_security_group" "app_sg" {
     to_port     = 8000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Backend API access"
+  }
+
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "Frontend access"
   }
 
   egress {
@@ -65,21 +60,42 @@ resource "aws_security_group" "app_sg" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow all outbound traffic"
   }
-}
-
-resource "aws_instance" "app_server" {
-  ami           = "ami-0c55b159cbfafe1f0"  # Ubuntu 20.04 LTS
-  instance_type = "t2.micro"
-  subnet_id     = aws_subnet.public.id
-  vpc_security_group_ids = [aws_security_group.app_sg.id]
-  key_name      = "your-key-pair-name"
 
   tags = {
-    Name = "stock-predictor-server"
+    Name = "stock-predictor-sg"
+    Environment = "production"
+    Project     = "stock-predictor"
   }
 }
 
-output "public_ip" {
-  value = aws_instance.app_server.public_ip
+# Attach the security group to the existing instance
+resource "aws_network_interface_security_group_attachment" "sg_attachment" {
+  security_group_id    = aws_security_group.app_sg.id
+  network_interface_id = data.aws_instance.existing_instance.network_interface_id
+}
+
+# Output the instance's public IP
+output "instance_public_ip" {
+  value       = data.aws_instance.existing_instance.public_ip
+  description = "The public IP address of the EC2 instance"
+}
+
+# Output the instance's private IP
+output "instance_private_ip" {
+  value       = data.aws_instance.existing_instance.private_ip
+  description = "The private IP address of the EC2 instance"
+}
+
+# Output the security group ID
+output "security_group_id" {
+  value       = aws_security_group.app_sg.id
+  description = "The ID of the security group"
+}
+
+# Output the VPC ID
+output "vpc_id" {
+  value       = data.aws_vpc.existing_vpc.id
+  description = "The ID of the VPC"
 }
