@@ -127,7 +127,7 @@ pipeline {
                             -e DATABASE_PASSWORD=Tha12345 -e DATABASE_HOST=db \\
                             ${DOCKERHUB_NAMESPACE}/${BACKEND_IMAGE_NAME}:latest
 
-                        sudo docker run -d --name ${FRONTEND_CONTAINER_NAME} --network ${dockernetwork} -p 5173:5173 \\
+                        sudo docker run -d --name ${FRONTEND_CONTAINER_NAME} --network ${dockernetwork} -p 4173:4173 \\
                             -e VITE_BACKEND_URL=http://${publicIP}:8000 \\
                             ${DOCKERHUB_NAMESPACE}/${FRONTEND_IMAGE_NAME}:latest
 
