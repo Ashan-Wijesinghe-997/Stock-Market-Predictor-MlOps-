@@ -46,7 +46,14 @@ pipeline {
         stage('Terraform Init and Plan') {
             steps {
                 script {
-                    withAWS(credentials: AWS_CREDENTIALS_ID, region: 'us-east-1') {
+                    withCredentials([
+                        [
+                            $class: 'AmazonWebServicesCredentialsBinding',
+                            credentialsId: AWS_CREDENTIALS_ID,
+                            accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                        ]
+                    ]) {
                         dir('terraform') {
                             sh 'terraform init'
                             sh 'terraform plan -out=tfplan'
@@ -59,7 +66,14 @@ pipeline {
         stage('Terraform Apply') {
             steps {
                 script {
-                    withAWS(credentials: AWS_CREDENTIALS_ID, region: 'us-east-1') {
+                    withCredentials([
+                        [
+                            $class: 'AmazonWebServicesCredentialsBinding',
+                            credentialsId: AWS_CREDENTIALS_ID,
+                            accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                        ]
+                    ]) {
                         dir('terraform') {
                             sh 'terraform apply -auto-approve tfplan'
                             sh '''
@@ -70,7 +84,7 @@ pipeline {
                     }
                 }
             }
-        }   
+        }  
 
         stage('Deploy with Ansible') {
             steps {
