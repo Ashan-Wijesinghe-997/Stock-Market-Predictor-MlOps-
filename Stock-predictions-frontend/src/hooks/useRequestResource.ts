@@ -3,7 +3,7 @@ import axios from "axios";
 import useData from "../globalVariables/dataContext";
 
 // Use environment variables or determine the base URL dynamically
-const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
 
 const client = axios.create({
   baseURL: API_URL
