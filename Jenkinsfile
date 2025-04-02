@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        BACKEND_IMAGE = 'your-dockerhub-username/stock-predictions-backend'
-        FRONTEND_IMAGE = 'your-dockerhub-username/stock-predictions-frontend'
+        BACKEND_IMAGE = 'ashanwijesinghe/stock-predictions-backend'
+        FRONTEND_IMAGE = 'ashanwijesinghe/stock-predictions-frontend'
         DOCKER_CREDENTIALS_ID = 'docker-hub-credentials'
     }
 
