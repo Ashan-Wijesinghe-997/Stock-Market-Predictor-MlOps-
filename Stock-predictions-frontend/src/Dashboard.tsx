@@ -25,7 +25,7 @@ export default function Dashboard() {
           variant="h5"
           sx={{
             mt: 10,
-            color: "rgba(255,255,255,0.3)",
+            color: "rgba(87, 42, 42, 0.3)",
             fontSize: { lg: 40, md: 35, sm: 20, xs: 15 },
           }}
         >
